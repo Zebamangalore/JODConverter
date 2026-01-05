@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Family JOD to INR Converter</title>
+  <title>Arabic Class JOD to INR Converter</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body { font-family: Arial, sans-serif; text-align: center; margin: 20px; background: #f9f9f9; }
@@ -11,29 +11,38 @@
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
     th { background: #3498db; color: white; }
     tr:nth-child(even) { background: #f2f2f2; }
-    .total-row { font-weight: bold; background: #27ae60; color: white; }
+	tr.total-row { font-weight: bold; background-color: #27ae60; color: #ffffff; }
+    tr.total-row td { padding: 12px; font-size:1.1em; }
     input[type=number], select { padding: 6px; text-align: center; }
     button { margin: 10px; padding: 10px 20px; background: #3498db; color: white; border: none; cursor: pointer; border-radius: 5px; }
     button:hover { background: #2980b9; }
-    #rateInfo, #lastUpdated { margin-top: 15px; font-weight: bold; }
+    #rateInfo, #lastUpdated, #calcDate { margin-top: 15px; font-weight: bold; }
+    .monthSelect, .monthTo { font-family: inherit; font-size: 1em; margin: 0 5px; }
   </style>
 </head>
 <body>
   <h2>
-    Family JOD to INR Converter  
-    <select id="startMonth">
+    Arabic Class JOD to INR Converter  
+    <select id="startMonth" class="monthSelect">
       <option>January</option><option>February</option><option>March</option><option>April</option>
       <option>May</option><option>June</option><option>July</option><option>August</option>
       <option>September</option><option>October</option><option>November</option><option>December</option>
     </select>
-    to
-    <select id="endMonth">
+    <span class="monthTo">to</span>
+    <select id="endMonth" class="monthSelect">
       <option>January</option><option>February</option><option>March</option><option>April</option>
       <option>May</option><option>June</option><option>July</option><option>August</option>
       <option>September</option><option>October</option><option>November</option><option>December</option>
     </select>
     <input type="number" id="yearBox" value="2026" style="width:80px;">
   </h2>
+
+  <p id="calcDate"></p>
+
+  <p>
+    Per Class Rate (default 7):  
+    <input type="number" id="multiplier" step="0.1" oninput="updateHeaderAndSave()">
+  </p>
 
   <p>
     Manual override (optional):  
@@ -42,42 +51,65 @@
 
   <table>
     <tr>
-      <th>Person</th><th>Input</th><th>JOD (×7)</th><th>INR</th>
+      <th>Person</th><th>Number of Classes</th><th id="jodHeader">JOD (×7)</th><th>INR</th>
     </tr>
-    <tr><td>Person 1</td><td><input type="number" id="p1"></td><td id="jod1">-</td><td id="inr1">-</td></tr>
-    <tr><td>Person 2</td><td><input type="number" id="p2"></td><td id="jod2">-</td><td id="inr2">-</td></tr>
-    <tr><td>Person 3</td><td><input type="number" id="p3"></td><td id="jod3">-</td><td id="inr3">-</td></tr>
-    <tr><td>Person 4</td><td><input type="number" id="p4"></td><td id="jod4">-</td><td id="inr4">-</td></tr>
+    <tr><td>Hafsa</td><td><input type="number" id="p1"></td><td id="jod1">-</td><td id="inr1">-</td></tr>
+    <tr><td>Hidaya</td><td><input type="number" id="p2"></td><td id="jod2">-</td><td id="inr2">-</td></tr>
+    <tr><td>Yusra</td><td><input type="number" id="p3"></td><td id="jod3">-</td><td id="inr3">-</td></tr>
+    <tr><td>zeba</td><td><input type="number" id="p4"></td><td id="jod4">-</td><td id="inr4">-</td></tr>
     <tr class="total-row"><td>Total</td><td id="totalInput">0</td><td id="totalJOD">0 JOD</td><td id="totalINR">₹0</td></tr>
   </table>
 
   <button onclick="convert()">Convert</button>
-  <p id="rateInfo">Fetching live rate...</p>
+  <p id="rateInfo"></p>
   <p id="lastUpdated"></p>
 
   <script>
     let liveRate = null;
 
+    // Show calculation date on page load
     window.onload = function() {
-      // Format current date as dd-mm-yyyy
       const now = new Date();
       const day = String(now.getDate()).padStart(2, '0');
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const year = now.getFullYear();
       const formattedDate = `${day}-${month}-${year}`;
+      document.getElementById("calcDate").innerHTML =
+        "Calculation date: " + formattedDate;
 
-      // Get selected range
-      const start = document.getElementById("startMonth").value;
-      const end = document.getElementById("endMonth").value;
-      const yearBox = document.getElementById("yearBox").value;
+      // Load multiplier from localStorage if available
+      const savedMultiplier = localStorage.getItem("jodMultiplier");
+      if (savedMultiplier) {
+        document.getElementById("multiplier").value = savedMultiplier;
+      } else {
+        document.getElementById("multiplier").value = 7;
+      }
+      updateHeader(); // initialize header with multiplier
+    };
 
-      // Popup alert with selected range and current date
-      alert("Welcome! Range: " + start + " to " + end + " " + yearBox +
-            "\nCalculation date: " + formattedDate);
+    function updateHeaderAndSave() {
+      const multiplier = document.getElementById("multiplier").value || 7;
+      localStorage.setItem("jodMultiplier", multiplier); // save to browser
+      updateHeader();
+    }
 
-      // Fetch live JOD→INR rate if manual override empty
+    function updateHeader() {
+      const multiplier = document.getElementById("multiplier").value || 7;
+      document.getElementById("jodHeader").innerHTML = "JOD (×" + multiplier + ")";
+    }
+
+    function convert() {
       const manualRate = document.getElementById("manualRate").value;
-      if (!manualRate) {
+
+      if (manualRate) {
+        // Use manual override
+        liveRate = parseFloat(manualRate);
+        document.getElementById("rateInfo").innerHTML =
+          "Manual Rate: 1 JOD = ₹" + liveRate.toFixed(2);
+        doCalculation();
+      } else {
+        // Fetch live rate only when Convert is pressed
+        document.getElementById("rateInfo").innerHTML = "Fetching live rate...";
         fetch("https://api.exchangerate.host/latest?base=JOD&symbols=INR")
           .then(response => response.json())
           .then(data => {
@@ -88,31 +120,18 @@
             const updatedTime = new Date();
             document.getElementById("lastUpdated").innerHTML =
               "Last updated: " + updatedTime.toLocaleString();
+
+            doCalculation();
           })
           .catch(err => {
             document.getElementById("rateInfo").innerHTML =
               "⚠️ Error fetching live rate.";
           });
-      } else {
-        liveRate = parseFloat(manualRate);
-        document.getElementById("rateInfo").innerHTML =
-          "Manual Rate: 1 JOD = ₹" + liveRate.toFixed(2);
       }
-    };
+    }
 
-    function convert() {
-      // Always check manual override first
-      const manualRate = document.getElementById("manualRate").value;
-      if (manualRate) {
-        liveRate = parseFloat(manualRate);
-        document.getElementById("rateInfo").innerHTML =
-          "Manual Rate: 1 JOD = ₹" + liveRate.toFixed(2);
-      }
-
-      if (!liveRate) {
-        document.getElementById("rateInfo").innerHTML = "⚠️ Rate not available yet.";
-        return;
-      }
+    function doCalculation() {
+      const multiplier = parseFloat(document.getElementById("multiplier").value) || 7;
 
       let values = [
         Number(document.getElementById("p1").value),
@@ -124,7 +143,7 @@
       let totalInput = 0, totalJOD = 0, totalINR = 0;
 
       values.forEach((val, i) => {
-        let jod = val * 7;
+        let jod = val * multiplier;
         let inr = jod * liveRate;
         totalInput += val;
         totalJOD += jod;
@@ -136,6 +155,8 @@
       document.getElementById("totalInput").innerHTML = totalInput;
       document.getElementById("totalJOD").innerHTML = totalJOD + " JOD";
       document.getElementById("totalINR").innerHTML = "₹" + totalINR.toFixed(2);
+
+      updateHeader(); // keep header in sync
     }
   </script>
 </body>
