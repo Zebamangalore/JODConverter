@@ -56,7 +56,7 @@
     <tr><td>Hafsa</td><td><input type="number" id="p1"></td><td id="jod1">-</td><td id="inr1">-</td></tr>
     <tr><td>Hidaya</td><td><input type="number" id="p2"></td><td id="jod2">-</td><td id="inr2">-</td></tr>
     <tr><td>Yusra</td><td><input type="number" id="p3"></td><td id="jod3">-</td><td id="inr3">-</td></tr>
-    <tr><td>zeba</td><td><input type="number" id="p4"></td><td id="jod4">-</td><td id="inr4">-</td></tr>
+    <tr><td>Zeba</td><td><input type="number" id="p4"></td><td id="jod4">-</td><td id="inr4">-</td></tr>
     <tr class="total-row"><td>Total</td><td id="totalInput">0</td><td id="totalJOD">0 JOD</td><td id="totalINR">₹0</td></tr>
   </table>
 
@@ -108,25 +108,31 @@
           "Manual Rate: 1 JOD = ₹" + liveRate.toFixed(2);
         doCalculation();
       } else {
-        // Fetch live rate only when Convert is pressed
-        document.getElementById("rateInfo").innerHTML = "Fetching live rate...";
-        fetch("https://api.exchangerate.host/latest?base=JOD&symbols=INR")
-          .then(response => response.json())
-          .then(data => {
-            liveRate = data.rates.INR;
-            document.getElementById("rateInfo").innerHTML =
-              "Live Rate: 1 JOD = ₹" + liveRate.toFixed(2);
+        	// Fetch live rate only when Convert is pressed
+        	document.getElementById("rateInfo").innerHTML = "Fetching live rate...";
+        	// Put your API key here
+			const API_KEY = "cur_live_qxKc3wI3sMpKrwiaB0JxmT5yGbQttl93oLcSDPF3";
 
-            const updatedTime = new Date();
-            document.getElementById("lastUpdated").innerHTML =
-              "Last updated: " + updatedTime.toLocaleString();
+			// Fetch live JOD → INR rate using CurrencyAPI
+			fetch(`https://api.currencyapi.com/v3/latest?apikey=${API_KEY}&base_currency=JOD&currencies=INR`)
+  			.then(response => response.json())
+  			.then(data => {
+    		// CurrencyAPI returns rates inside data.data
+    		liveRate = data.data.INR.value;
 
-            doCalculation();
-          })
-          .catch(err => {
-            document.getElementById("rateInfo").innerHTML =
-              "⚠️ Error fetching live rate.";
-          });
+    		document.getElementById("rateInfo").innerHTML =
+      		"Live Rate: 1 JOD = ₹" + liveRate.toFixed(2);
+
+    		const updatedTime = new Date();
+    		document.getElementById("lastUpdated").innerHTML =
+      		"Last updated: " + updatedTime.toLocaleString();
+
+    		doCalculation();
+  	})
+  .catch(err => {
+    document.getElementById("rateInfo").innerHTML =
+      ":warning: Live rate unavailable. Please enter manual rate.";
+  });
       }
     }
 
